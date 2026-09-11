@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Clima</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex-center bg-gradient">
+    <div class="card glass-effect wide-card">
+        <div class="header">
+            <h1 class="title">Estado del Clima</h1>
+            <button id="logoutBtn" class="btn btn-secondary btn-sm">Cerrar Sesión</button>
+        </div>
+        
+        <div class="search-section">
+            <label for="locationSelect">Selecciona una ubicación:</label>
+            <div class="search-controls">
+                <select id="locationSelect" class="select-input">
+                    <option value="" disabled selected>Elige una ciudad...</option>
+                    <option value="Tingo Maria">Tingo María (Perú)</option>
+                    <option value="Huanuco">Huánuco (Perú)</option>
+                </select>
+                <button id="consultBtn" class="btn btn-primary">Consultar</button>
+            </div>
+        </div>
+
+        <div id="weatherResult" class="result-section" style="display: none;">
+            <h2 id="resLocation" class="location-title">Ubicación</h2>
+            <div class="weather-grid">
+                <div class="weather-box">
+                    <span class="label">Temperatura</span>
+                    <span id="resTemp" class="value">--</span>
+                </div>
+                <div class="weather-box">
+                    <span class="label">Condición</span>
+                    <span id="resCondition" class="value">--</span>
+                </div>
+                <div class="weather-box">
+                    <span class="label">Humedad</span>
+                    <span id="resHumidity" class="value">--</span>
+                </div>
+            </div>
+        </div>
+        <p id="errorMessage" class="error-text" style="display: none;">No se pudo obtener el clima.</p>
+    </div>
+
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('jwt_token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('jwt_token');
+            window.location.href = 'login.html';
+        });
+
+        // Query weather
+        document.getElementById('consultBtn').addEventListener('click', async () => {
+            const location = document.getElementById('locationSelect').value;
+            const errorMsg = document.getElementById('errorMessage');
+            const resultSection = document.getElementById('weatherResult');
+
+            if (!location) {
+                errorMsg.innerText = "Por favor selecciona una ubicación.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/v1/weather?location=${location}`, {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${token}` 
+                    }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('jwt_token');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('resLocation').innerText = data.location;
+                    document.getElementById('resTemp').innerText = data.temperature;
+                    document.getElementById('resCondition').innerText = data.condition;
+                    document.getElementById('resHumidity').innerText = data.humidity;
+                    resultSection.style.display = 'block';
+                    resultSection.classList.add('fade-in');
+                } else {
+                    errorMsg.innerText = "Error al consultar el clima.";
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.innerText = "Error de conexión con el servidor.";
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

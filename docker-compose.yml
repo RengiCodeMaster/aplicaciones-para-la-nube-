@@ -1,0 +1,56 @@
+# ==============================================================================
+# DOCKER COMPOSE PRINCIPAL (RAÍZ DEL PROYECTO)
+# Permite levantar backend y frontend directamente desde la raíz del repositorio
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # SERVICIO: BACKEND (Spring Boot REST API)
+  # ----------------------------------------------------------------------------
+  weather-backend:
+    # Asigna un nombre claro al contenedor en Docker Desktop / CLI
+    container_name: weather-backend-container
+    # Define la ubicación del contexto y Dockerfile del backend
+    build:
+      context: ./weather-app/weather-backend
+      dockerfile: Dockerfile
+    # Expone el puerto 8080 del contenedor al puerto 8080 de tu máquina
+    ports:
+      - "8080:8080"
+    # Variables de configuración para Spring Boot
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    # Mantiene el contenedor en ejecución a menos que se detenga manualmente
+    restart: unless-stopped
+    # Conexión a la red compartida
+    networks:
+      - weather-network
+
+  # ----------------------------------------------------------------------------
+  # SERVICIO: FRONTEND (Cliente Web con Nginx)
+  # ----------------------------------------------------------------------------
+  weather-frontend:
+    # Nombre asignado al contenedor web
+    container_name: weather-frontend-container
+    # Define la ruta relativa al frontend y su Dockerfile
+    build:
+      context: ./weather-app/weather-frontend
+      dockerfile: Dockerfile
+    # Expone la aplicación web en http://localhost:3000 redirigiendo al puerto 80 interno
+    ports:
+      - "3000:80"
+    # Asegura que el servicio backend inicie antes del frontend
+    depends_on:
+      - weather-backend
+    # Mantiene el contenedor activo
+    restart: unless-stopped
+    # Red privada entre contenedores
+    networks:
+      - weather-network
+
+# ------------------------------------------------------------------------------
+# RED PRIVADA (Bridge): Permite que los contenedores se comuniquen entre sí
+# ------------------------------------------------------------------------------
+networks:
+  weather-network:
+    driver: bridge

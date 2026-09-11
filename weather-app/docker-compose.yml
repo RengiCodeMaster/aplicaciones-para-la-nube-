@@ -1,0 +1,60 @@
+# ==============================================================================
+# DOCKER COMPOSE PARA LA APLICACIÓN DE CLIMA (WEATHER-APP)
+# Orquesta el backend (Spring Boot) y el frontend (Nginx)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # SERVICIO: BACKEND (API Spring Boot)
+  # ----------------------------------------------------------------------------
+  weather-backend:
+    # Nombre que tendrá el contenedor al ejecutarse
+    container_name: weather-backend-container
+    # Configuración de construcción de la imagen
+    build:
+      # Carpeta donde se encuentra el código y el Dockerfile del backend
+      context: ./weather-backend
+      # Archivo Dockerfile específico
+      dockerfile: Dockerfile
+    # Mapeo de puertos: <PuertoHost>:<PuertoContenedor>
+    ports:
+      - "8080:8080"
+    # Variables de entorno para la aplicación
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    # Política de reinicio automático en caso de fallo
+    restart: unless-stopped
+    # Red interna para comunicar los contenedores
+    networks:
+      - weather-network
+
+  # ----------------------------------------------------------------------------
+  # SERVICIO: FRONTEND (Web Nginx)
+  # ----------------------------------------------------------------------------
+  weather-frontend:
+    # Nombre que tendrá el contenedor del frontend
+    container_name: weather-frontend-container
+    # Configuración de construcción de la imagen
+    build:
+      # Carpeta donde se encuentran los archivos HTML/CSS/JS y su Dockerfile
+      context: ./weather-frontend
+      # Archivo Dockerfile específico
+      dockerfile: Dockerfile
+    # Mapeamos el puerto 3000 de tu máquina al puerto 80 del servidor Nginx
+    ports:
+      - "3000:80"
+    # Indicamos que el frontend depende de que el backend esté listo
+    depends_on:
+      - weather-backend
+    # Política de reinicio automático
+    restart: unless-stopped
+    # Conectamos a la misma red para permitir resolución interna de nombres
+    networks:
+      - weather-network
+
+# ------------------------------------------------------------------------------
+# REDES: Red tipo puente (bridge) para aislar la comunicación de esta app
+# ------------------------------------------------------------------------------
+networks:
+  weather-network:
+    driver: bridge
